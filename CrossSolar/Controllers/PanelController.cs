@@ -9,7 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CrossSolar.Controllers
 {
-    [Route("[controller]")]
+    [Produces("application/json")]
+    [Route("api/panel")]
     public class PanelController : Controller
     {
         private readonly IPanelRepository _panelRepository;

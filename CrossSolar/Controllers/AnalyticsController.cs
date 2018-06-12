@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CrossSolar.Controllers
 {
-    [Route("panel")]
+    [Route("api/panel")]
     public class AnalyticsController : Controller
     {
         private readonly IAnalyticsRepository _analyticsRepository;
@@ -24,7 +24,7 @@ namespace CrossSolar.Controllers
         }
 
         // GET panel/XXXX1111YYYY2222/analytics
-        [HttpGet("{banelId}/[controller]")]
+        [HttpGet("{panelId}/[controller]")]
         public async Task<IActionResult> Get([FromRoute]string panelId)
         {
             var panel = await _panelRepository.Query()
@@ -55,7 +55,36 @@ namespace CrossSolar.Controllers
         [HttpGet("{panelId}/[controller]/day")]
         public async Task<IActionResult> DayResults([FromRoute]string panelId)
         {
-            var result = new List<OneDayElectricityModel>();
+
+            var panel = await _panelRepository.Query()
+                .FirstOrDefaultAsync(x => x.Serial.Equals(panelId, StringComparison.CurrentCultureIgnoreCase));
+
+            if (panel == null)
+            {
+                return NotFound();
+            }
+
+            var analytics = await _analyticsRepository.Query()
+                .Where(x => x.PanelId.Equals(panelId, StringComparison.CurrentCultureIgnoreCase)).ToListAsync();
+
+            if (analytics == null)
+            {
+                return NoContent();
+            }
+
+            List<OneDayElectricityModel> result = analytics
+             .Where(x => x.DateTime < DateTime.Now.Date)
+             .GroupBy(x => new { x.DateTime.Year, x.DateTime.Month, x.DateTime.Day })
+             .Select (group => new OneDayElectricityModel
+             {
+                 Sum = group.Sum(c => c.KiloWatt),
+                 Average = group.Average(c => c.KiloWatt),
+                 Minimum = group.Min(c => c.KiloWatt),
+                 Maximum = group.Max(c => c.KiloWatt),
+                 DateTime = group.Select(c => c.DateTime.Date).First()
+             })
+             .OrderBy(x => x.DateTime)
+             .ToList<OneDayElectricityModel>();
 
             return Ok(result);
         }

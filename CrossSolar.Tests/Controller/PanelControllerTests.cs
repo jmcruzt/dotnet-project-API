@@ -21,6 +21,29 @@ namespace CrossSolar.Tests.Controller
         }
 
         [Fact]
+        public async Task BadRequestPanel()
+        {
+            var panel = new PanelModel
+            {
+                Brand = "Areva",
+                Latitude = 12.345678,
+                Longitude = 98.7655432,
+                Serial = "AAAA1111BBBB2222"
+            };
+            _panelController.ModelState.AddModelError("Panel", "Panel is Required");
+
+            // Act
+            var result = await _panelController.Register(panel);
+
+            // Assert
+            Assert.NotNull(result);
+
+            var badRequestResult = result as BadRequestObjectResult;
+            Assert.NotNull(badRequestResult);
+            Assert.Equal(400, badRequestResult.StatusCode);
+        }
+
+        [Fact]
         public async Task Register_ShouldInsertPanel()
         {
             var panel = new PanelModel
